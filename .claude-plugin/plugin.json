@@ -1,0 +1,30 @@
+{
+  "name": "skill-suggest",
+  "version": "0.1.0",
+  "description": "Suggests skills as pills above the prompt while you type a brief, then asks which to load before it sends",
+  "author": { "name": "Raksha S" },
+  "license": "MIT",
+  "keywords": ["skills", "suggestions", "prompt", "productivity"],
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "mode": {
+      "type": "string",
+      "title": "When to ask",
+      "description": "ask: hold a submitted brief until you pick skills. live: only attach the pills you picked while typing.",
+      "default": "ask",
+      "options": ["ask", "live"]
+    },
+    "aiRanking": {
+      "type": "boolean",
+      "title": "Rank with a model",
+      "description": "Ask a small model to rank skills for a submitted brief, on top of keyword matching.",
+      "default": true
+    },
+    "aiModel": {
+      "type": "string",
+      "title": "Ranking model",
+      "description": "Model alias or id used for ranking.",
+      "default": "haiku"
+    }
+  }
+}

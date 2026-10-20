@@ -1,0 +1,15 @@
+{
+  "name": "skill-suggest",
+  "owner": { "name": "Raksha S" },
+  "metadata": {
+    "description": "Skill suggestions as pills above the Claude Code prompt",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "skill-suggest",
+      "source": "./",
+      "description": "Suggests skills as pills above the prompt while you type a brief, then asks which to load before it sends"
+    }
+  ]
+}
