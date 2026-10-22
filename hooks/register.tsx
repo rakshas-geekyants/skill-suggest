@@ -309,11 +309,11 @@ export const register: Register = (on, options) => {
       await update($, isHidden, () => false)
 
       const picks = await analyse($, e.text)
-      if (picks.length > 0) {
+      const preTicked = picks.filter(s => s.match === 'strong' && s.kind !== 'open-source').map(s => s.name)
+      // Nothing worth ticking means nothing worth holding for: send as usual.
+      if (preTicked.length > 0) {
         await update($, suggestions, () => picks)
-        await update($, selected, () =>
-          picks.filter(s => s.match === 'strong' && s.kind !== 'open-source').map(s => s.name),
-        )
+        await update($, selected, () => preTicked)
         await update($, phase, () => 'held' as Phase)
 
         $.ui.toast('Skill Suggest wants your input: pick the skills to load, then Send')
