@@ -147,6 +147,13 @@ async function analyse($: EngineInterface, brief: string): Promise<Suggestion[]>
   return parsePicks(result.text, candidates) ?? keyword
 }
 
+// Only hold a brief when at least one installed skill clearly fits it; the
+// keyword pass is local and free, so most prompts skip the model entirely.
+async function isWorthAsking($: EngineInterface, brief: string): Promise<boolean> {
+  const keyword = rank(await loadIndex($), brief, 8)
+  return keyword.some(s => s.match === 'strong' && s.kind !== 'open-source')
+}
+
 async function sendHeld($: EngineInterface, withPicks: boolean): Promise<void> {
   const brief = await read($, held)
   if (brief === null) return
@@ -286,11 +293,16 @@ export const register: Register = (on, options) => {
       mode === 'ask' &&
       e.turnId === undefined &&
       !(await read($, isReviewed)) &&
-      e.text.trim().split(/\s+/).length >= MIN_WORDS + 2
+      e.text.trim().split(/\s+/).length >= MIN_WORDS + 2 &&
+      (await isWorthAsking($, e.text))
+
+    // A plugin's own submission cannot carry the person's images, so a brief
+    // with attachments is never held: Claude asks for the picks instead.
+    const hasMedia = (e.attachments?.length ?? 0) > 0
 
     // A held brief must be on screen somewhere, or it would be lost.
-    if (shouldHold) await show($)
-    if (shouldHold && isSeen()) {
+    if (shouldHold && !hasMedia) await show($)
+    if (shouldHold && !hasMedia && isSeen()) {
       isPaneDismissed = false
       await update($, held, () => e.text)
       await update($, phase, () => 'analysing' as Phase)
@@ -304,7 +316,8 @@ export const register: Register = (on, options) => {
         )
         await update($, phase, () => 'held' as Phase)
 
-        return { drop: 'Skill Suggest: pick the skills to load above, then Send.' }
+        $.ui.toast('Skill Suggest wants your input: pick the skills to load, then Send')
+        return { drop: 'Skill Suggest wants your input — pick the skills to load above, then press Send. Your brief is kept.' }
       }
       // Nothing fits: the brief goes through untouched.
     } else if (shouldHold) {
@@ -559,8 +572,8 @@ export function contextFor(chosen: readonly Suggestion[]): string | null {
   const lines: string[] = []
   if (load.length > 0) {
     lines.push(
-      'The person picked these skills for this request with the skill-suggest plugin. ' +
-        'Before you start, load each one with the Skill tool and follow it: ' +
+      'Pick these skills for the request: before you start, load each one with the Skill tool ' +
+        'and follow it: ' +
         load.map(s => `\`${s.name}\``).join(', ') +
         '.',
     )
